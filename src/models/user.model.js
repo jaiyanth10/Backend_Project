@@ -51,7 +51,7 @@ const userSchema = mongoose.Schema(
 //Read point 4 in video 8 in google docs.
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 //Now I am creating a custom method for this schema to check if password is matching.
