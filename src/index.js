@@ -1,7 +1,7 @@
 import dotenv from "dotenv"; //using dotenv lib for more protection of env variables
 import { connectDB } from "./db/index.js";
 import { app } from "./app.js";
-dotenv.config({ path: "./env" }); //configuring dotenv
+dotenv.config({ path: "./.env" }); //configuring dotenv
 //call database connection function,if successfull connect to server
 connectDB()
   .then(() => {

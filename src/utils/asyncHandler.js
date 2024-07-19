@@ -20,7 +20,7 @@ const asyncHandler = (fn) => async (req, res, next) => {
   try {
     await fn(req, res, next);
   } catch (error) {
-    next(err);
+    next(error);
     console.log(error);
   }
 };
@@ -33,10 +33,8 @@ export { asyncHandler };
 //2.The above function expects the recieved function should be async, thats why we used await keyword before fn(req, res, next).
 //3. so when a function is passed, the above function will return atry catch block where the recieved function is executed in try block, with params req,res,next.
 //4. confusion about params, dont think the recieving function have req,res,next already, then why why are we apssing new one, You should think
-//in other angle, here req,res,next are not nrml params, they are passed by express.js, So 
+//in other angle, here req,res,next are not nrml params, they are passed by express.js, So
 //They will be same through out the instance.
-
-
 
 // lets see an example.
 
@@ -44,7 +42,7 @@ export { asyncHandler };
 
 // const registerUser = asyncHandler((req, res) => {
 //   res.status(200).json({ message: "ok" });
-// }); 
+// });
 
 //so in above code we are passing this function "(req, res) => {res.status(200).json({ message: "ok" });}" into asyncHandler.
 
@@ -60,16 +58,6 @@ export { asyncHandler };
 //     });
 //   }
 // };
-
-
-
-
-
-
-
-
-
-
 
 // Version 1: using custom promise creation
 
