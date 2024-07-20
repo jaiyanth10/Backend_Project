@@ -59,12 +59,12 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password); //returns boolean
 };
-//creating JWT(type) Access token Tokens with custom methods.
+//creating JWT(type) Access token  with custom methods(userSchema.methods).
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       //payload
-      _id: this._id, //_id is id from mongo dd//this.vales are from DB.
+      _id: this._id, //left one are variable names of token //this.vales are from DB.
       email: this.email,
       username: this.username,
       fullname: this.fullname,
@@ -91,3 +91,21 @@ userSchema.methods.generateRefreshToken = function () {
 };
 //exporting model
 export const User = mongoose.model("User", userSchema);
+
+// mongoose schema - mongo db document structure (every user has his own document, schema tells how that document should look, like what fileds it should have).
+// mongoose model - is used to access those all documents(collection), finding dcoument cahnging the values insde document and etc.
+
+// userSchema.methods.isPasswordCorrect,userSchema.methods.generateAccessToken,userSchema.methods.generateRefreshToken
+
+//All the above methods can be accesed by getting instance of particular user document like below.
+
+// const loggedin_user = User.findOne({$or:[{username},{email}]});
+//using findOne we are going through all the documents in Mongo DB, for  user with particular username or email
+//findOne will return true, if it fines either one of username or password
+
+//or
+//const userDocument = await User.findById(userId);
+//findBy will help u find the particular documnet associated with particular id.
+
+//You cannot  access these function with model.
+//  User.isPasswordCorrect - WebTransportDatagramDuplexStream,wont work
