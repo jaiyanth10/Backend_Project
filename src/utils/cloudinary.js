@@ -31,4 +31,22 @@ async function uploadOnCloudinary(localFilePath) {
   }
 }
 
-export { uploadOnCloudinary };
+async function deleteFileOnCloudinary(path) {
+  try {
+    if (!path) {
+      return null; //return null if path is not crt.
+    }
+    //uploade.destry will delete single file in cloudinary.
+    //It take 2 parameters 1.name of file in cloudinary, callback function console.log(result), result will be automatically provided.
+    // Lets extract the name from path to pass as first parameter
+    const parts = path.split("/"); // parts = ["https:", "", "res.cloudinary.com", "demo", "image", "upload", "v1625253607", "sample.jpg"]
+    const filename = parts.pop(); // pops the last element(think structure as stack) filename = "sample.jpg"
+    const nameParts = filename.split("."); // nameParts = ["sample", "jpg"]
+    const name = nameParts[0]; // name = "sample"
+    await cloudinary.uploader.destroy(name, (result) => console.log(result));
+  } catch (err) {
+    console.log("Unable to delete file from cloudinary", err);
+  }
+}
+
+export { uploadOnCloudinary, deleteFileOnCloudinary };

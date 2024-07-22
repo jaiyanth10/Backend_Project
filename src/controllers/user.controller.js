@@ -2,8 +2,12 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFileOnCloudinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import mongoose from "mongoose";
 
 //The custom function whcih will create refresha nd access tokens for the user, whose DB documnet ID is passed.
 async function generateAccessandRefreshTokens(userId) {
@@ -342,16 +346,17 @@ const updateAccountDetails = asyncHandler(async () => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  //fetching local path from req.body which we got from multer middleware injection
-  const avatarLocalPath = req.file?.path;
+  //fetching local path from req.file which we got from multer middleware injection
+  const avatarLocalPath = req.file?.path; //path of newly uploaded file
   //.file?.path will give the path of uploaded avatar, no need to avatar[0]. path like we did for above located registerUser function,
   //as we have single file Headers, it will fetch the pathe of uploaded file automatically.
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is missing");
   }
-
-  //TODO: delete old image in cloudinary (go to media explorer in cloudinary  and delete the image)
+  //fetch the cloudinary path of img from DB.
+  const user_doc = await User.findById(req.user?._id).select("avatar");
+  const img_cloudinary_path_DB = user_doc?.avatar;
 
   //uploading to cloudinary
   const avatar = await uploadOnCloudinary(avatarLocalPath);
@@ -369,7 +374,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     },
     { new: true }
   ).select("-password"); //deselecting password for being returned doc instance
-
+  //deleting old img in cloudinary  After updating the database with new url
+  await deleteFileOnCloudinary(img_cloudinary_path_DB);
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Avatar image updated successfully"));
@@ -385,7 +391,9 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Cover image file is missing");
   }
 
-  //TODO: delete old image in cloudinary
+  //fetch the cloudinary path of img from DB.
+  const user_doc = await User.findById(req.user?._id).select("coverImage");
+  const img_cloudinary_path_DB = user_doc?.coverImage;
 
   //uploading to cloudinary
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
@@ -404,9 +412,173 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password"); //deselecting password for being returned doc instance
 
+  //deleting old img in cloudinary  After updating the database with new url
+  await deleteFileOnCloudinary(img_cloudinary_path_DB);
+
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
+});
+
+//response function for the getUserProfile endpoint.
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  // Extract the username from the request parameters
+  const { username } = req.params;
+
+  // Check if the username is provided and is not an empty string after trimming
+  if (!username?.trim()) {
+    throw new ApiError(400, "username is missing");
+  }
+
+  // Use MongoDB aggregation pipeline to fetch the user channel profile
+  //.aggregate will return an Array (remember)
+  const channel = await User.aggregate([
+    {
+      // Match the user document where th`e username matches the provided username
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      // Lookup the subscriptions collection to find all documents where this user's _id matches the channel field
+      //look up will join the the modal on which we are aggregationg (User) and from field Modal (subscriptions)
+      //here what look up do is in place of the _id field, it will insert whole table of subscription,at where  the valu in _id matches with the value in channel
+      //but instead of "_id" the name will be subscribers
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id", //the field in User model
+        foreignField: "channel", //the field in Subscription
+        as: "subscribers",
+      },
+    },
+    {
+      // Lookup the subscriptions collection to find all documents where this user's _id matches the subscriber field
+      //look up will join the the modal on which we are aggregationg (User) and from field Modal (subscriptions)
+      //here what look up do is in place of the _id field, it will insert whole table of subscription,
+      //at where  the valu in _id matches with the value in subscriber
+      //but instead of "_id" the name will be subscribedTo
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id", //the field in User model
+        foreignField: "subscriber", //the field in Subscription
+        as: "subscribedTo",
+      },
+    },
+    {
+      // Add new fields to the output documents
+      $addFields: {
+        // Count the number of subscribers by getting the size of the subscribers array
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        // Count the number of channels this user is subscribed to by getting the size of the subscribedTo array
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        // Check if the current user (req.user?._id) is in the subscribers array
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      // As the fields become more in count and repitetive, we will filter and send only usefull to front end. using $project.
+      // Project (select) specific fields to include in the final output
+      // 1 means like flag, if put 1 these will be included in output.
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+
+  // If no channel is found (i.e., the aggregation result is an empty array), throw a 404 error
+  if (!channel?.length) {
+    throw new ApiError(404, "channel does not exist");
+  }
+
+  // Return the user channel profile with a 200 status code
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User channel fetched successfully")
+    );
+});
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+  // Use MongoDB aggregation pipeline to fetch the watch history for the current user
+  const user = await User.aggregate([
+    {
+      // Match the user document using the user's _id
+      // Instead of directly using req.user._id, we are using "new mongoose.Types.ObjectId(req.user._id)"
+      // because req.user._id is a string and needs to be converted to ObjectId format to prevent errors during the aggregation process.
+      // For methods like .findById(), Mongoose handles this conversion automatically.
+      $match: {
+        _id: new  mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      // Lookup the videos collection to fetch the watch history
+      // This will join the User model with the Videos model
+      // The watchHistory field in User model contains the _ids of the videos watched by the user
+      // The _ids from the watchHistory field will be used to fetch the corresponding video documents
+      $lookup: {
+        from: "videos", // the collection to join with User
+        localField: "watchHistory", // the field in User model that contains video _ids
+        foreignField: "_id", // the field in Videos model that contains the video _ids
+        as: "watchHistory", // the new array field name in the result that will contain the joined documents
+        pipeline: [
+          {
+            // Perform a nested lookup to fetch the owner details for each video
+            $lookup: {
+              from: "users", // the collection to join with Videos
+              localField: "owner", // the field in Videos model that contains the owner _id
+              foreignField: "_id", // the field in Users model that contains the user _id
+              as: "owner", // the new array field name in each video document that will contain the joined owner documents
+              pipeline: [
+                {
+                  // Project (select) specific fields to include in the owner documents
+                  $project: {
+                    fullName: 1, // include the fullName field in the owner documents
+                    username: 1, // include the username field in the owner documents
+                    avatar: 1, // include the avatar field in the owner documents
+                  },
+                },
+              ],
+            },
+          },
+          {
+            // Add a new field to each video document to simplify the owner field
+            // The owner field is an array after the $lookup stage, so we extract the first element
+            $addFields: {
+              owner: {
+                $first: "$owner", // get the first (and only) element of the owner array
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  // Send the watch history in the response with a 200 status code
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      user[0].watchHistory, // the watch history array from the first (and only) user document
+      "Watch history fetched successfully"
+    )
+  );
 });
 
 export {
@@ -419,4 +591,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory,
 };

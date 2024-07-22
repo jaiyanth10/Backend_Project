@@ -9,6 +9,8 @@ import {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -45,18 +47,32 @@ router.route("/logout").post(
 router.route("/regenerateAccessToken").post(regenerateAccessToken); //regenerateAccessToken is function from controller which returns response to frontend
 
 //route for user to change current password
-router.route("/changeCurrentPassword").post(changeCurrentPassword); //changeCurrentPassword is function from controller which returns response to frontend
+router.route("/changeCurrentPassword").post(
+  //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
+  verifyJWT,
+  changeCurrentPassword
+); //changeCurrentPassword is function from controller which returns response to frontend
 
 //route for user to get Current User
-router.route("/getCurrentUser").post(getCurrentUser); //getCurrentUser is function from controller which returns response to frontend
+router.route("/getCurrentUser").post(
+  //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
+  verifyJWT,
+  getCurrentUser
+); //getCurrentUser is function from controller which returns response to frontend
 
 //route for user to update email and password
-router.route("/updateAccountDetails").post(updateAccountDetails); //updateAccountDetails is function from controller which returns response to frontend
+router.route("/updateAccountDetails").post(
+  //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
+  verifyJWT,
+  updateAccountDetails
+); //updateAccountDetails is function from controller which returns response to frontend
 
 //route for user to update User Avatar
 router.route("/updateUserAvatar").post(
   //injecting multer middlewareby importing custom function called "upload" from multer.middleware.js file.
   //.single will create a single field to upload file .
+  //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
+  verifyJWT,
   upload.single("avatar"),
   updateUserAvatar
 ); //updateUserAvatar is function from controller which returns response to frontend
@@ -65,8 +81,26 @@ router.route("/updateUserAvatar").post(
 router.route("/updateUserCoverImage").post(
   //injecting multer middlewareby importing custom function called "upload" from multer.middleware.js file.
   //.single will create a single field to upload file .
+  //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
+  verifyJWT,
   upload.single("CoverImage"),
   updateUserCoverImage
 ); //updateUserCoverImage is function from controller which returns response to frontend
+
+//route for user to get channel profile
+//to click this endpoint : the url should be like http://localhost:8000/api/v1/users/getuserProfile/johndoe
+//In client side :axios.get(`http://localhost:8000/api/v1/users/getuserProfile/${username}`)
+router.route("/getuserProfile/:username").get(
+  getUserChannelProfile //getUserChannelProfile is function from controller which returns response to frontend
+);
+
+//route for user to get getWatchHistory
+//to click this endpoint : the url should be like http://localhost:8000/api/v1/users/getWatchHistory
+//In client side :axios.get(`http://localhost:8000/api/v1/users/getWatchHistory`)
+router.route("/getWatchHistory").get(
+  //injecting auth middleware function as using req.users in getWatchHistory function in user.controller.js
+  verifyJWT,
+  getWatchHistory //getWatchHistory is function from controller which returns response to frontend
+);
 
 export { router };
