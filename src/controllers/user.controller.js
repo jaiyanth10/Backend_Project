@@ -517,6 +517,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 const getWatchHistory = asyncHandler(async (req, res) => {
   // Use MongoDB aggregation pipeline to fetch the watch history for the current user
+  //join User and Video
   const user = await User.aggregate([
     {
       // Match the user document using the user's _id
@@ -540,6 +541,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         pipeline: [
           {
             // Perform a nested lookup to fetch the owner details for each video
+            //again join User and Video
             $lookup: {
               from: "users", // the collection to join with Videos
               localField: "owner", // the field in Videos model that contains the owner _id
