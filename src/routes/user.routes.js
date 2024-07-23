@@ -48,8 +48,6 @@ router.route("/regenerateAccessToken").post(regenerateAccessToken); //regenerate
 
 //route for user to change current password
 router.route("/changeCurrentPassword").post(
-  //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
-  verifyJWT,
   changeCurrentPassword
 ); //changeCurrentPassword is function from controller which returns response to frontend
 

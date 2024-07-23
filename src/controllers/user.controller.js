@@ -8,6 +8,7 @@ import {
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 
 //The custom function whcih will create refresha nd access tokens for the user, whose DB documnet ID is passed.
 async function generateAccessandRefreshTokens(userId) {
@@ -525,7 +526,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       // because req.user._id is a string and needs to be converted to ObjectId format to prevent errors during the aggregation process.
       // For methods like .findById(), Mongoose handles this conversion automatically.
       $match: {
-        _id: new  mongoose.Types.ObjectId(req.user._id),
+        _id: new mongoose.Types.ObjectId(req.user._id),
       },
     },
     {
