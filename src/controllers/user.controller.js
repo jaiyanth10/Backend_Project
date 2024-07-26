@@ -65,7 +65,8 @@ const registerUser = asyncHandler(async (req, res) => {
   //console.log(req.files);
 
   //4.
-  const avatarLocalPath = req.files?.avatar[0]?.path;
+  const avatarLocalPath = req.files?.avatar[0]?.path; //[0] because,if u upload 2 images u will have 2 values in array,[0] means 1st img
+  console.log("file structure", req.files);
   //like req.body, req.files will also be available as we injected multer middle ware in route of this end point.
   //check user.routes file.
 
@@ -545,7 +546,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
             //again join User and Video
             $lookup: {
               from: "users", // the collection to join with Videos
-              localField: "owner", // the field in Videos model that contains the owner _id
+              localField: "owner", // the field in Videos model that contains the owner _id(user _id)
               foreignField: "_id", // the field in Users model that contains the user _id
               as: "owner", // the new array field name in each video document that will contain the joined owner documents
               pipeline: [

@@ -59,14 +59,14 @@ router.route("/getCurrentUser").post(
 ); //getCurrentUser is function from controller which returns response to frontend
 
 //route for user to update email and password
-router.route("/updateAccountDetails").post(
+router.route("/updateAccountDetails").patch(//patch will update partical fields of data// post add new field // put update entire data.
   //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
   verifyJWT,
   updateAccountDetails
 ); //updateAccountDetails is function from controller which returns response to frontend
 
 //route for user to update User Avatar
-router.route("/updateUserAvatar").post(
+router.route("/updateUserAvatar").patch(//patch will update partical fields of data// post add new field // put update entire data.
   //injecting multer middlewareby importing custom function called "upload" from multer.middleware.js file.
   //.single will create a single field to upload file .
   //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js
@@ -76,7 +76,7 @@ router.route("/updateUserAvatar").post(
 ); //updateUserAvatar is function from controller which returns response to frontend
 
 //route for user to update User cover Image
-router.route("/updateUserCoverImage").post(
+router.route("/updateUserCoverImage").patch(//patch will update partical fields of data// post add new field // put update entire data.
   //injecting multer middlewareby importing custom function called "upload" from multer.middleware.js file.
   //.single will create a single field to upload file .
   //injecting auth middleware function as using req.users in updateUserCoverImage function in user.controller.js

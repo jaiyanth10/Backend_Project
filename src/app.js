@@ -38,5 +38,6 @@ app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/likes", likeRouter);
 app.use("/api/v1/playlist", playlistRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+app.use("/api/v1/tweets", tweetRouter);
 
 // http://localhost:8000/api/v1/users/register

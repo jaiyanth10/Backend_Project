@@ -33,9 +33,9 @@ const videoSchema = new mongoose.Schema(
     },
     isPublished: {
       type: Boolean,
-      default: true, //by default value will be 0
+      default: true, //by default value will be true
     },
-    video: {
+    owner: {
       type: mongoose.Schema.Types.ObjectId, //The ObjectId type is often used to create relationships between different documents in MongoDB collections.(different data models)
       ref: "User", //Indicates that the ObjectId references the User model(another model).
     },
